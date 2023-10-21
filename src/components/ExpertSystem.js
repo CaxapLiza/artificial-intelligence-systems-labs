@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useState } from "react";
 import { clsx } from 'clsx';
 
 class Node {
@@ -72,10 +72,6 @@ class Graph {
 }
 
 function ExpertSystem() {
-
-
-  const arrayItems = [];
-
   //const
   const radioButtons = [
     [0, "получить все узлы, связанные с отдельным узлом конкретным соотношением"],
@@ -84,10 +80,14 @@ function ExpertSystem() {
     [3, "проследить путь между узлами"]
   ]
 
+  //arrays
+  const arrayItems = [];
+
   //objects arrays
   const [nodes, setNodes] = useState([]) //массив всех узлов
   const [relationships, setRelationships] = useState([]) //массив всех отношений
   const [edges, setEdges] = useState([]) //массив всех ребер
+  const [relationshipArray, setRelationshipArray] = useState([])
 
   //components states
   const [radio, setRadio] = useState(0) //выбранная задача (1-4)
@@ -136,7 +136,83 @@ function ExpertSystem() {
     }
   );
 
+  const getAllNodesWithSpecificRelationship = (nodeNumber, relationshipNumber) => {
+    let s = "";
+
+    let s1 = "";
+    for (let i = 0; i < relationshipArray.length; i++) {
+      if (relationshipArray[i][nodeNumber] === relationships[relationshipNumber].ToString()) {
+        s1 += nodes[i] + " " + relationships[relationshipNumber] + " " + nodes[nodeNumber] + "\n";
+      }
+    }
+
+    if (s1 !== "") {
+      s += "Со словом " + nodes[nodeNumber] + " и отношением " + relationships[relationshipNumber] + " существуют следующие связи:\n";
+      s += s1;
+    }
+    else s += "Связей к " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + " не существует!\n";
+
+    let s2 = "";
+    for (let i = 0; i < relationshipArray.length; i++) {
+      if (relationshipArray[nodeNumber][i] === relationships[relationshipNumber].ToString()) {
+        s2 += nodes[nodeNumber] + " " + relationships[relationshipNumber] + " " + nodes[i] + "\n";
+      }
+    }
+
+    if (s2 !== "") {
+      s += "Возможно, Вас также заинтересуют связи от слова " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + ":\n";
+      s += s2;
+    }
+    else s += "Связей от " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + " не существует!\n";
+
+    return s.split("\n");
+  }
+
+  const getAllRelationshipForSpecificNode = (nodeNumber) => {
+    let s = "";
+
+    for (let i = 0; i < relationshipArray.length; i++) {
+      if (relationshipArray[i][nodeNumber] !== undefined) {
+        s += nodes[i] + " " + relationshipArray[i][nodeNumber] + " " + nodes[nodeNumber] + "\n";
+      }
+    }
+    s += "n"
+    for (let i = 0; i < relationshipArray.length; i++) {
+      if (relationshipArray[nodeNumber][i] !== undefined) {
+        s += nodes[nodeNumber] + " " + relationshipArray[nodeNumber][i] + " " + nodes[i] + "\n";
+      }
+    }
+
+    return s.split("\n");
+  }
+
+  const getAllNodesPairsWithSpecificRelationship = (relationshipNumber) => {
+    let s = "";
+    for (let i = 0; i < relationshipArray.length; i++) {
+      for (let j = 0; j < relationshipArray.length; j++) {
+        if (relationshipArray[i][j] === relationships[relationshipNumber].ToString())
+          s += nodes[i] + " " + relationshipArray[i][j] + " " + nodes[j] + "\n";
+      }
+    }
+
+    return s.split("\n");
+  }
+
+  const getAllPathsBetweenNodes = (startNodeNumber, endNodeNumber) => {
+    let s = ""
+    const graph = new Graph(edges)
+
+    const allPaths = graph.findAllPaths(nodes[startNodeNumber], nodes[endNodeNumber])
+
+    allPaths.forEach((path) => {
+      s += path.map(edge => edge.toString()).join(" -> ") + "\n";
+    })
+
+    return s.split("\n")
+  }
+
   //buttons functions - create
+
   const createNodeBttnClick = () => {
     if (nodeName !== "") {
       const node = new Node(nodeName, nodes.length)
@@ -168,7 +244,7 @@ function ExpertSystem() {
       "Домашний питомец", "Вес"
     ]
 
-    nodeNames.map((nodeName, index) => {
+    nodeNames.forEach((nodeName, index) => {
       const node = new Node(nodeName, index)
       setNodes(prevNodes => [...prevNodes, node])
     })
@@ -180,7 +256,7 @@ function ExpertSystem() {
       "Не включает в себя", "Использует", "Не использует", "Не принадлежит"
     ]
 
-    relationshipNames.map((relationshipName, index) => {
+    relationshipNames.forEach((relationshipName, index) => {
       const rel = new Relationship(relationshipName, index)
       setRelationships(prevState => [...prevState, rel])
     })
@@ -203,12 +279,12 @@ function ExpertSystem() {
 
     const lines = text.split('\n');
     const array = []
-    lines.map((line) => {
+    lines.forEach((line) => {
       array.push(line.split('\t'))
     })
 
-    array.map((line, startNodeNumber) => {
-      line.map((relName, endNodeNumber) => {
+    array.forEach((line, startNodeNumber) => {
+      line.forEach((relName, endNodeNumber) => {
         const relNumber = relationships.indexOf(relName);
         if (relNumber !== -1) {
           setEdges(prevState => [...prevState, new Edge(nodes[startNodeNumber],
@@ -229,89 +305,49 @@ function ExpertSystem() {
     setAnswer(relationships)
   }
 
- /* const getAnswerBttnClick = () =>  {
-    relationshipArray = [];
-    arrayItems.map((item) => {
-      relationshipArray[item[0]][item[1]] = relationships[item[2]].toString();
+  const getAnswerBttnClick = () =>  {
+    let array = []
+    arrayItems.forEach((item) => {
+      array[item[0]][item[1]] = relationships[item[2]].toString();
     })
+    setRelationshipArray(array)
 
-    setAnswer("Не выбран тип задания!")
-
-    switch (taskNumber) {
+    switch (radio) {
       case 0: {
-        break;
-      }
-      case 1: {
         //получить все узлы, связанные с отдельным узлом конкретным соотношением
-        setAnswer(getAllNodesWithSpecificRelationship(endNode, relationship))
+        setAnswer(getAllNodesWithSpecificRelationship(endNodeAnswer, relationshipAnswer))
 
         break;
       }
-      case 2: {
+
+      case 1: {
         //получить имена всех отношений для отдельного узла
-        setAnswer(getAllRelationshipForSpecificNode(startNode))
+        setAnswer(getAllRelationshipForSpecificNode(startNodeAnswer))
 
         break;
       }
-      case 3: {
+
+      case 2: {
         //получить все пары узлов, связанных конкретным соотношением
-        setAnswer(getAllNodesPairsWithSpecificRelationship(relationship))
+        setAnswer(getAllNodesPairsWithSpecificRelationship(relationshipAnswer))
 
         break;
       }
-      case 4: {
+
+      case 3: {
         //проследить путь между узлами
-        setAnswer(getAllPathsBetweenNodes(startNode, endNode))
+        setAnswer(getAllPathsBetweenNodes(startNodeAnswer, endNodeAnswer))
 
         break;
       }
+
       default: {
+        setAnswer(["Не выбран тип задания!"])
+
         break;
       }
     }
-  }*/
-
-  /*const getAllNodesWithSpecificRelationship = (nodeNumber, relationshipNumber) => {
-    let s = "";
-
-    let s1 = "";
-    for (int i = 0; i < relationshipArray.GetLength(0); i++)
-    {
-      if (relationshipArray[i, nodeNumber] == relationships[relationshipNumber].ToString())
-      {
-        s1 += nodes[i] + " " + relationships[relationshipNumber] + " " + nodes[nodeNumber] + "\n";
-      }
-    }
-
-    if (s1 != "")
-    {
-      s += "Со словом " + nodes[nodeNumber] + " и отношением " + relationships[relationshipNumber] + " существуют следующие связи:\n";
-      s += s1;
-    }
-    else s += "Связей к " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + " не существует!\n";
-
-    string s2 = "";
-    for (int i = 0; i < relationshipArray.GetLength(0); i++)
-    {
-      if (relationshipArray[nodeNumber, i] == relationships[relationshipNumber].ToString())
-      {
-        s2 += nodes[nodeNumber] + " " + relationships[relationshipNumber] + " " + nodes[i] + "\n";
-      }
-    }
-
-    if (s2 != "")
-    {
-      s += "Возможно, Вас также заинтересуют связи от слова " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + "\n";
-      s += s2;
-    }
-    else s += "Связей от " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + " не существует!\n";
-
-    return s;
   }
-
-
-  */
-
 
 
   return(
@@ -357,7 +393,7 @@ function ExpertSystem() {
               name="startNodeInputList"
               id="startNodeInputList"
               className="rounded-2xl p-2 mt-1 ml-1 w-full"
-              value={0}
+              value={startNode}
               onChange={(e) => {setStartNode(e.target.value)}}>
                 {nodes.map((node) => {
                   return (
@@ -372,7 +408,7 @@ function ExpertSystem() {
               name="relationshipInputList"
               id="relationshipInputList"
               className="rounded-2xl p-2 mt-1 ml-1 w-full"
-              value={0}
+              value={relationship}
               onChange={(e) => {setRelationship(e.target.value)}}>
                 {relationships.map((relationship) => {
                   return (
@@ -387,7 +423,7 @@ function ExpertSystem() {
               name="finishNodeInputList"
               id="finishNodeInputList"
               className="rounded-2xl p-2 mt-1 ml-1 w-full"
-              value={0}
+              value={endNode}
               onChange={(e) => {setEndNode(e.target.value)}}>
                 {nodes.map((node) => {
                   return (
@@ -423,12 +459,14 @@ function ExpertSystem() {
           </button>
         </div>
         <div id="answer" className="bg-amber-50 rounded-2xl p-2">
-          {answer.map((line, index) => (
-            <div key={index}>
-              {line.toString()}
-              <br/>
-            </div>
-          ))}
+          {answer.map((line, index) => {
+            return (
+              <div key={index}>
+                {line.toString()}
+                <br/>
+              </div>
+            )
+          })}
         </div>
       </div>
       <div className="flex flex-col gap-3 mx-3 max-w-sm">
@@ -465,7 +503,7 @@ function ExpertSystem() {
                 name="startNode"
                 id="startNode"
                 className={nodeStartClasses}
-                value={0}
+                value={startNodeAnswer}
                 onChange={(e) => {setStartNodeAnswer(e.target.value)}}>
                   {nodes.map((node) => {
                     return (
@@ -480,7 +518,7 @@ function ExpertSystem() {
                 name="relationship"
                 id="relationship"
                 className={relationshipClasses}
-                value={0}
+                value={relationshipAnswer}
                 onChange={(e) => {setRelationshipAnswer(e.target.value)}}>
                   {relationships.map((relationship) => {
                     return (
@@ -495,7 +533,7 @@ function ExpertSystem() {
                 name="finishNode"
                 id="finishNode"
                 className={nodeEndClasses}
-                value={0}
+                value={endNodeAnswer}
                 onChange={(e) => {setEndNodeAnswer(e.target.value)}}>
                   {nodes.map((node) => {
                     return (
@@ -504,7 +542,9 @@ function ExpertSystem() {
                   })}
               </select>
             </label>
-            <a href="#answer" className="p-3 bg-amber-100 rounded-2xl">Получить ответ</a>
+            <a href="#answer"
+               className="p-3 bg-amber-100 rounded-2xl"
+               onClick={getAnswerBttnClick}>Получить ответ</a>
           </div>
         </div>
         <div className="flex flex-col gap-3 bg-amber-50 p-5 rounded-2xl">
