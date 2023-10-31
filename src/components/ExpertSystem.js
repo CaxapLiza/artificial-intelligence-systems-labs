@@ -32,44 +32,6 @@ class Edge {
     return this.start + " " + this.relationship + " " + this.end;
   }
 }
-class Graph {
-  constructor(edges) {
-    this.edges = edges
-  }
-
-  findAllPathsDFS(currentNode, endNode, visited, currentPath, allPaths) {
-    visited[currentNode.id] = true;
-
-    this.edges.forEach((edge) => {
-      if (edge.start === currentNode && !visited[edge.end.id])
-      {
-        currentPath.push(edge);
-
-        if (edge.end === endNode)
-        {
-          allPaths.push(currentPath);
-        }
-        else
-        {
-          this.findAllPathsDFS(edge.end, endNode, visited, currentPath, allPaths);
-        }
-        currentPath.remove(edge);
-      }
-    })
-
-    visited[currentNode.id] = false;
-  }
-
-  findAllPaths(startNode, endNode) {
-    const allPaths = [];
-    const currentPath = [];
-    const visited = [];
-
-    this.findAllPathsDFS(startNode, endNode, visited, currentPath, allPaths);
-
-    return allPaths;
-  }
-}
 
 function ExpertSystem() {
   //const
@@ -79,9 +41,6 @@ function ExpertSystem() {
     [2, "получить все пары узлов, связанных конкретным соотношением"],
     [3, "проследить путь между узлами"]
   ]
-
-  //arrays
-  const arrayItems = [];
 
   //objects arrays
   const [nodes, setNodes] = useState([]) //массив всех узлов
@@ -137,78 +96,87 @@ function ExpertSystem() {
   );
 
   const getAllNodesWithSpecificRelationship = (nodeNumber, relationshipNumber) => {
-    let s = "";
+    const answerArray = []
+    answerArray.push("Связи к выбранному узлу:")
+    edges.forEach(edge => {
+      if (nodeNumber === edge.end.id && relationshipNumber === edge.relationship.id)
+        answerArray.push(edge.toString())
+    })
+    answerArray.push("Связи от выбранного узла:")
+    edges.forEach(edge => {
+      if (nodeNumber === edge.start.id && relationshipNumber === edge.relationship.id)
+        answerArray.push(edge.toString())
+    })
 
-    let s1 = "";
-    for (let i = 0; i < relationshipArray.length; i++) {
-      if (relationshipArray[i][nodeNumber] === relationships[relationshipNumber].ToString()) {
-        s1 += nodes[i] + " " + relationships[relationshipNumber] + " " + nodes[nodeNumber] + "\n";
-      }
-    }
-
-    if (s1 !== "") {
-      s += "Со словом " + nodes[nodeNumber] + " и отношением " + relationships[relationshipNumber] + " существуют следующие связи:\n";
-      s += s1;
-    }
-    else s += "Связей к " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + " не существует!\n";
-
-    let s2 = "";
-    for (let i = 0; i < relationshipArray.length; i++) {
-      if (relationshipArray[nodeNumber][i] === relationships[relationshipNumber].ToString()) {
-        s2 += nodes[nodeNumber] + " " + relationships[relationshipNumber] + " " + nodes[i] + "\n";
-      }
-    }
-
-    if (s2 !== "") {
-      s += "Возможно, Вас также заинтересуют связи от слова " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + ":\n";
-      s += s2;
-    }
-    else s += "Связей от " + nodes[nodeNumber] + " с отношением " + relationships[relationshipNumber] + " не существует!\n";
-
-    return s.split("\n");
+    return answerArray
   }
 
   const getAllRelationshipForSpecificNode = (nodeNumber) => {
-    let s = "";
+    const answerArray = []
 
-    for (let i = 0; i < relationshipArray.length; i++) {
-      if (relationshipArray[i][nodeNumber] !== undefined) {
-        s += nodes[i] + " " + relationshipArray[i][nodeNumber] + " " + nodes[nodeNumber] + "\n";
-      }
-    }
-    s += "n"
-    for (let i = 0; i < relationshipArray.length; i++) {
-      if (relationshipArray[nodeNumber][i] !== undefined) {
-        s += nodes[nodeNumber] + " " + relationshipArray[nodeNumber][i] + " " + nodes[i] + "\n";
-      }
-    }
+    answerArray.push("Связи от выбранного узла:")
+    edges.forEach(edge => {
+      if (nodeNumber === edge.start.id)
+        answerArray.push(edge.toString())
+    })
+    answerArray.push("Связи к выбранному узлу:")
+    edges.forEach(edge => {
+      if (nodeNumber === edge.end.id)
+        answerArray.push(edge.toString())
+    })
 
-    return s.split("\n");
+    return answerArray
   }
 
   const getAllNodesPairsWithSpecificRelationship = (relationshipNumber) => {
-    let s = "";
-    for (let i = 0; i < relationshipArray.length; i++) {
-      for (let j = 0; j < relationshipArray.length; j++) {
-        if (relationshipArray[i][j] === relationships[relationshipNumber].ToString())
-          s += nodes[i] + " " + relationshipArray[i][j] + " " + nodes[j] + "\n";
-      }
-    }
+    const answerArray = []
+    edges.forEach(edge => {
+      if (relationshipNumber === edge.relationship.id)
+        answerArray.push(edge.toString())
+    })
 
-    return s.split("\n");
+    return answerArray
   }
 
   const getAllPathsBetweenNodes = (startNodeNumber, endNodeNumber) => {
-    let s = ""
-    const graph = new Graph(edges)
+    const findPathsHelper = (currentNodeId, currentPath) => {
+      if (currentNodeId === endNodeNumber) {
+        paths.push(currentPath);
+        return;
+      }
 
-    const allPaths = graph.findAllPaths(nodes[startNodeNumber], nodes[endNodeNumber])
+      const outgoingEdges = edges.filter(edge => edge.start.id === currentNodeId);
 
-    allPaths.forEach((path) => {
-      s += path.map(edge => edge.toString()).join(" -> ") + "\n";
+      for (const edge of outgoingEdges) {
+        const nextNodeId = edge.end.id;
+        if (!currentPath.includes(nextNodeId)) {
+          findPathsHelper(nextNodeId, [...currentPath, nextNodeId]);
+        }
+      }
+    }
+    const findEdge = (start, end) => {
+      for (const edge of edges) {
+        if (edge.start.id === start && edge.end.id === end) {
+          return edge.toString();
+        }
+      }
+      return "";
+    }
+
+    const paths = []
+    findPathsHelper(startNodeNumber, [startNodeNumber])
+
+    const answer = []
+    paths.forEach(path => {
+      let s = ""
+      for (let i = 0; i < path.length - 1; i++) {
+        s += findEdge(path[i], path[i + 1]) + " -> "
+      }
+      s = s.replace(/ -> $/, "")
+      answer.push(s)
     })
 
-    return s.split("\n")
+    return answer
   }
 
   //buttons functions - create
@@ -238,15 +206,19 @@ function ExpertSystem() {
   }
 
   const createDataAutoBttnClick = () => {
+    const nodesArray = []
+    const relsArray = []
+    const numEdgesArray = []
+    const edgesArray = []
+
     const nodeNames = [
       "Слон", "Мышь", "Уши", "Хвост", "Цвет", "Зерно", "Вода",
       "Животное", "Грызун", "Размер", "Цирк", "Шерсть", "Млекопитающее",
       "Домашний питомец", "Вес"
     ]
-
     nodeNames.forEach((nodeName, index) => {
       const node = new Node(nodeName, index)
-      setNodes(prevNodes => [...prevNodes, node])
+      nodesArray.push(node)
     })
 
     const relationshipNames = [
@@ -255,10 +227,9 @@ function ExpertSystem() {
       "Пугает", "Легкий", "Принадлежат", "Принадлежит", "Включает в себя",
       "Не включает в себя", "Использует", "Не использует", "Не принадлежит"
     ]
-
     relationshipNames.forEach((relationshipName, index) => {
       const rel = new Relationship(relationshipName, index)
-      setRelationships(prevState => [...prevState, rel])
+      relsArray.push(rel)
     })
 
     const text = "Х	Боится	Имеет	Имеет	Серый	Не ест	Пьет	Является	Не является	Большой	Выступает	Не имеет	Является	Не является	Тяжелый\n" +
@@ -285,14 +256,21 @@ function ExpertSystem() {
 
     array.forEach((line, startNodeNumber) => {
       line.forEach((relName, endNodeNumber) => {
-        const relNumber = relationships.indexOf(relName);
+        const relNumber = relationshipNames.indexOf(relName);
         if (relNumber !== -1) {
-          setEdges(prevState => [...prevState, new Edge(nodes[startNodeNumber],
-            nodes[endNodeNumber], relationships[relNumber])])
-          arrayItems.push([startNodeNumber, endNodeNumber, relNumber])
+          numEdgesArray.push({startNum: startNodeNumber, endNum: endNodeNumber, relNum: relNumber})
         }
       })
     })
+
+    numEdgesArray.forEach(item => {
+      const edge = new Edge(nodesArray[item.startNum], nodesArray[item.endNum], relsArray[item.relNum])
+      edgesArray.push(edge)
+    })
+
+    setNodes(nodesArray)
+    setRelationships(relsArray)
+    setEdges(edgesArray)
   }
 
   //buttons functions - get
@@ -305,12 +283,26 @@ function ExpertSystem() {
     setAnswer(relationships)
   }
 
+  const getEdgesBttnClick = () => {
+    setAnswer(edges)
+  }
+
   const getAnswerBttnClick = () =>  {
-    let array = []
-    arrayItems.forEach((item) => {
-      array[item[0]][item[1]] = relationships[item[2]].toString();
-    })
-    setRelationshipArray(array)
+    if (relationshipArray === []) {
+      const array = []
+      for (let i = 0; i < nodes.length; i++) {
+        const line = []
+        for (let j = 0; j < nodes.length; j++) {
+          line.push('')
+        }
+        array.push(line)
+      }
+
+      edges.forEach((edge) => {
+        array[edge.start.id][edge.end.id] = edge.relationship.toString();
+      })
+      setRelationshipArray(array)
+    }
 
     switch (radio) {
       case 0: {
@@ -346,6 +338,38 @@ function ExpertSystem() {
 
         break;
       }
+    }
+  }
+
+  const getChatAnswerBttnClick = () => {
+    const words = chatMessage.replace(/[.,;:!?]/g, '').split(' ');
+
+    const foundNodes = [];
+    const foundRelationships = [];
+
+    words.forEach(word => {
+      const matchingNodes = nodes.filter(node => node.name === word);
+      const matchingRelationships = relationships.filter(relationship => relationship.name === word);
+
+      if (matchingNodes.length > 0) {
+        foundNodes.push(matchingNodes[0]);
+      } else if (matchingRelationships.length > 0) {
+        foundRelationships.push(matchingRelationships[0]);
+      }
+    });
+
+    if (foundNodes.length === 1 && foundRelationships.length === 0) {
+      return getAllRelationshipForSpecificNode(foundNodes[0].id);
+    } else if (foundNodes.length === 2 && foundRelationships.length === 0) {
+      return getAllPathsBetweenNodes(foundNodes[0].id, foundNodes[1].id);
+    } else if (foundNodes.length === 1 && foundRelationships.length === 1) {
+      return getAllNodesWithSpecificRelationship(foundNodes[0].id, foundRelationships[0].id);
+    } else if (foundNodes.length === 0 && foundRelationships.length === 1) {
+      return getAllNodesPairsWithSpecificRelationship(foundRelationships[0].id);
+    } else if (foundNodes.length === 0 && foundRelationships.length === 0) {
+      return ["Недостаточно данных"];
+    } else {
+      return ["Переизбыток данных"];
     }
   }
 
@@ -446,16 +470,22 @@ function ExpertSystem() {
       <div className="flex flex-col gap-3 mx-3 max-w-sm">
         <div className="flex gap-3 p-2">
           <button
-            className="w-1/2 p-3 bg-amber-200 rounded-2xl"
+            className="w-1/3 p-3 bg-amber-200 rounded-2xl"
             onClick={getNodesBttnClick}
           >
             Вывод узлов
           </button>
           <button
-            className="w-1/2 p-3 bg-amber-200 rounded-2xl"
+            className="w-1/3 p-3 bg-amber-200 rounded-2xl"
             onClick={getRelationshipBttnClick}
           >
             Вывод отношений
+          </button>
+          <button
+            className="w-1/3 p-3 bg-amber-200 rounded-2xl"
+            onClick={getEdgesBttnClick}
+          >
+            Вывод ребер
           </button>
         </div>
         <div id="answer" className="bg-amber-50 rounded-2xl p-2">
@@ -504,7 +534,7 @@ function ExpertSystem() {
                 id="startNode"
                 className={nodeStartClasses}
                 value={startNodeAnswer}
-                onChange={(e) => {setStartNodeAnswer(e.target.value)}}>
+                onChange={(e) => {setStartNodeAnswer(parseInt(e.target.value))}}>
                   {nodes.map((node) => {
                     return (
                       <option key={node.id} value={node.id}>{node.toString()}</option>
@@ -519,7 +549,7 @@ function ExpertSystem() {
                 id="relationship"
                 className={relationshipClasses}
                 value={relationshipAnswer}
-                onChange={(e) => {setRelationshipAnswer(e.target.value)}}>
+                onChange={(e) => {setRelationshipAnswer(parseInt(e.target.value))}}>
                   {relationships.map((relationship) => {
                     return (
                       <option key={relationship.id} value={relationship.id}>{relationship.toString()}</option>
@@ -534,7 +564,7 @@ function ExpertSystem() {
                 id="finishNode"
                 className={nodeEndClasses}
                 value={endNodeAnswer}
-                onChange={(e) => {setEndNodeAnswer(e.target.value)}}>
+                onChange={(e) => {setEndNodeAnswer(parseInt(e.target.value))}}>
                   {nodes.map((node) => {
                     return (
                       <option key={node.id} value={node.id}>{node.toString()}</option>
@@ -562,7 +592,7 @@ function ExpertSystem() {
               value={chatMessage}
               onChange={(e) => setChatMessage(e.target.value)}/>
           </label>
-          <a href="#answer" className="p-3 bg-amber-100 rounded-2xl">Получить ответ</a>
+          <a href="#answer" className="p-3 bg-amber-100 rounded-2xl" onClick={() => setAnswer(getChatAnswerBttnClick())}>Получить ответ</a>
         </div>
       </div>
     </div>
