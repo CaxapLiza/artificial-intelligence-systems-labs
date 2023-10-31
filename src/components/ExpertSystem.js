@@ -375,7 +375,7 @@ function ExpertSystem() {
 
 
   return(
-    <div className="flex mx-auto mt-5 max-md:gap-3 max-md:max-w-md max-md:flex-col">
+    <div className="grid grid-cols-3 justify-items-center mx-auto mt-5 gap-3 max-lg:grid-cols-1">
       <div className="flex flex-col mx-3 gap-3 max-w-sm">
         <div className="p-5 flex flex-col gap-3 bg-amber-50 rounded-2xl">
           <div className="text-lg font-semibold">
